@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Runway Video Creator
 
 A modern web application for creating AI-generated videos using Runway's Gen-4 model. Built with React, Node.js, and MongoDB.
@@ -221,3 +222,6 @@ For issues and questions:
 
 **Note**: This application requires a valid Runway API key and may incur costs based on your Runway usage plan.
 
+=======
+# video-editor
+>>>>>>> 09555506077b572024796aad510fc40e95612d4f
