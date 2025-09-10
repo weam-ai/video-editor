@@ -17,21 +17,28 @@ console.log('RUNWAY_API_KEY:', process.env.RUNWAY_API_KEY ? '***' + process.env.
 console.log('MONGODB_URI:', process.env.MONGODB_URI ? '***' + process.env.MONGODB_URI.slice(-20) : 'NOT SET');
 
 // Now import routes after environment variables are loaded
+const { weamSessionMiddleware } = require('./middleware/weamSession');
+const dbConnect = require('./lib/db'); // Import database connection
 const videoRoutes = require('./routes/videoRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+// Allow credentialed requests from the frontend so cookies are sent
+const allowedOrigin = process.env.CLIENT_ORIGIN || process.env.NEXT_PUBLIC_APP_ORIGIN;
+app.use(cors({
+  origin: allowedOrigin || true,
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
+// Weam session (shares cookie with AI Doc Editor)
+app.use(weamSessionMiddleware());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+// Connect to MongoDB using our db connection utility
+dbConnect()
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => {
   console.error('MongoDB connection error:', err);
@@ -41,6 +48,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // Routes
 app.use('/api/videos', videoRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -55,6 +63,14 @@ app.get('/api/test', (req, res) => {
     timestamp: new Date().toISOString(),
     headers: req.headers
   });
+});
+
+// Auth/session check for clients to confirm Weam session
+app.get('/api/auth/me', (req, res) => {
+  if (req.session && req.session.user) {
+    return res.json({ authenticated: true, user: req.session.user });
+  }
+  return res.status(401).json({ authenticated: false, error: 'No Weam session' });
 });
 
 // Error handling middleware

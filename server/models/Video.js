@@ -1,92 +1,142 @@
 const mongoose = require('mongoose');
 
-const videoSchema = new mongoose.Schema({
+const VideoSchema = new mongoose.Schema({
+  docType: {
+    type: String,
+    default: 'video',
+    index: true,
+  },
   videoId: {
     type: String,
     required: true,
-    unique: true
-  },
-  userId: {
-    type: String,
-    required: true,
-    default: 'default-user' // For demo purposes
-  },
-  teamId: {
-    type: String,
-    default: 'default-team' // For demo purposes
-  },
-  prompt: {
-    type: String,
-    required: true
+    unique: true,
   },
   title: {
     type: String,
-    default: ''
   },
-  status: {
+  prompt: {
     type: String,
-    enum: ['queued', 'running', 'completed', 'failed', 'SUCCEEDED', 'FAILED', 'PENDING', 'RUNNING', 'THROTTLED', 'CANCELLED'],
-    default: 'queued'
+    required: true,
   },
-  runwayJobId: {
+  enhancedPrompt: {
     type: String,
-    required: true
   },
   videoUrl: {
     type: String,
-    default: ''
   },
-  videoUrls: [{
-    type: String
-  }],
-  duration: {
-    type: Number,
-    default: 5
-  },
-  aspectRatio: {
+  thumbnailUrl: {
     type: String,
-    default: '16:9'
+  },
+  status: {
+    type: String,
+    enum: ['PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'CANCELLED'],
+    default: 'PENDING',
+  },
+  runwayJobId: {
+    type: String,
+    required: true,
   },
   model: {
     type: String,
-    default: 'gen4_turbo'
+    required: true,
   },
-  progress: {
+  duration: {
     type: Number,
-    min: 0,
-    max: 1,
-    default: 0
+    required: true,
   },
+  aspectRatio: {
+    type: String,
+    required: true,
+  },
+  quality: {
+    type: String,
+    required: true,
+  },
+  user: {
+    id: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    }
+  },
+  companyId: {
+    type: String,
+  },
+  isPublic: {
+    type: Boolean,
+    default: false,
+  },
+  tags: [{
+    type: String,
+  }],
   metadata: {
-    type: Object,
-    default: {}
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
   },
-  errorMessage: {
-    type: String,
-    default: ''
-  },
-  failureCode: {
-    type: String,
-    default: ''
-  },
-  completedAt: {
+  // History of edits performed on this video
+  videoEdits: [
+    {
+      editId: {
+        type: String,
+        required: true,
+      },
+      type: {
+        type: String, // e.g., "trim", "crop", "music", "composite"
+        default: 'composite',
+      },
+      params: {
+        type: mongoose.Schema.Types.Mixed, // stores trimStart, trimEnd, segments, crop, music, etc.
+        default: {},
+      },
+      status: {
+        type: String,
+        enum: ['processing', 'completed', 'failed'],
+        default: 'processing',
+      },
+      outputUrl: {
+        type: String, // URL to the edited video if completed
+      },
+      errorMessage: {
+        type: String,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+      updatedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  createdAt: {
     type: Date,
-    default: null
+    default: Date.now,
   },
-  videoEdits: {
-    type: Object,
-    default: null
-  }
-}, {
-  timestamps: true
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  // For traceability from chats
+  createdBy: {
+    id: { type: String },
+    email: { type: String },
+  },
 });
 
-// Auto-generate title from prompt if not provided
-videoSchema.pre('save', function(next) {
-  if (!this.title && this.prompt) {
-    this.title = this.prompt.split(' ').slice(0, 5).join(' ') + '...';
-  }
+VideoSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
   next();
 });
 
-module.exports = mongoose.model('Video', videoSchema);
+// Store all AI-VideoGen docs inside a single collection if requested
+// e.g., COLLECTION_PREFIX=solution_aivideo → collection "solution_aivideo"
+// Fallback to "videos" when no prefix provided
+const collectionName = process.env.COLLECTION_PREFIX 
+  ? `${process.env.COLLECTION_PREFIX}` 
+  : 'videos';
+
+module.exports = mongoose.models.Video || mongoose.model('Video', VideoSchema, collectionName);

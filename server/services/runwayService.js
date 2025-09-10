@@ -50,19 +50,29 @@ class RunwayService {
     });
   }
 
-  async createVideoGeneration(prompt, duration = 5, aspectRatio = '16:9') {
+  async createVideoGeneration(prompt, duration = 5, aspectRatio = '16:9', model = 'gen4_turbo') {
     try {
-      console.log(`Attempting to create video generation with prompt: "${prompt}", duration: ${duration}s, aspect ratio: ${aspectRatio}`);
+      console.log(`Attempting to create video generation with prompt: "${prompt}", duration: ${duration}s, aspect ratio: ${aspectRatio}, model: ${model}`);
       
-      // Use the image_to_video endpoint directly since it's working
-      console.log('Using image_to_video endpoint with gen4_turbo...');
+      // Sanitize and trim prompt to meet API limits (< 1000 chars per Runway)
+      const sanitizedPrompt = this.sanitizePrompt(prompt, 980);
+      
+      // Map frontend model names to Runway API model identifiers
+      const modelMap = {
+        'Runway Gen-4 Turbo': 'gen4_turbo',
+        'Runway Gen-3': 'gen3',
+        'Veo3': 'veo3'
+      };
+      
+      const runwayModel = modelMap[model] || 'gen4_turbo';
+      console.log(`Using image_to_video endpoint with model ${runwayModel}...`);
       
       const response = await this.client.post('/v1/image_to_video', {
         promptImage: 'https://picsum.photos/512/512',
-        promptText: prompt,
-        duration: duration,
+        promptText: sanitizedPrompt,
+        duration: parseInt(duration), // Ensure duration is a number
         ratio: this.convertAspectRatioToRatio(aspectRatio),
-        model: 'gen4_turbo'
+        model: runwayModel
       });
       console.log('Image-to-video endpoint successful:', response.data);
       return response.data;
@@ -82,6 +92,23 @@ class RunwayService {
       '3:4': '960:1280'
     };
     return ratioMap[aspectRatio] || '1280:720';
+  }
+
+  /**
+   * Sanitize and trim prompt text to meet API length limits
+   * - Collapses excessive whitespace
+   * - Trims to a maximum length (default 980 to allow server-side wrapping)
+   */
+  sanitizePrompt(originalPrompt, maxLen = 980) {
+    if (!originalPrompt) return '';
+    // Collapse whitespace and trim
+    let p = String(originalPrompt).replace(/\s+/g, ' ').trim();
+    if (p.length > maxLen) {
+      const truncated = p.slice(0, maxLen - 3).trim() + '...';
+      console.log(`Prompt exceeded ${maxLen} chars. Truncated to fit API limits.`);
+      return truncated;
+    }
+    return p;
   }
 
   async getJobStatus(jobId) {

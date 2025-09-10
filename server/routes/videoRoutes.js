@@ -4,6 +4,22 @@ const Video = require('../models/Video');
 const runwayService = require('../services/runwayService');
 
 const router = express.Router();
+const { requireWeamAuth } = require('../middleware/weamSession');
+const { v4: uuid } = require('uuid');
+
+// Providers availability based on env vars
+router.get('/providers', (req, res) => {
+  try {
+    const availability = {
+      runway: Boolean(process.env.RUNWAY_API_KEY),
+      banana: Boolean(process.env.BANANA_API_KEY),
+      veo3: Boolean(process.env.VEO3_API_KEY)
+    };
+    return res.json(availability);
+  } catch (e) {
+    return res.json({ runway: false, banana: false, veo3: false });
+  }
+});
 
 // Test Runway API connection
 router.get('/test-runway', async (req, res) => {
@@ -256,16 +272,16 @@ router.get('/health', (req, res) => {
 });
 
 // Create a new video generation request
-router.post('/generate', async (req, res) => {
+router.post('/generate', requireWeamAuth, async (req, res) => {
   try {
-    const { prompt, duration = 5, aspectRatio = '16:9' } = req.body;
+    const { prompt, duration = 5, aspectRatio = '16:9', model = 'gen4_turbo' } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
     // Create video generation job with Runway
-    const runwayResponse = await runwayService.createVideoGeneration(prompt, duration, aspectRatio);
+    const runwayResponse = await runwayService.createVideoGeneration(prompt, duration, aspectRatio, model);
     
     console.log('Runway API response:', runwayResponse);
     
@@ -275,9 +291,19 @@ router.post('/generate', async (req, res) => {
       prompt,
       duration,
       aspectRatio,
+      quality: req.body.quality || '1080p',
       runwayJobId: runwayResponse.id,
       status: 'PENDING', // Use Runway's status values
-      model: 'gen4_turbo', // Default model
+      model: model || 'gen4_turbo',
+      user: {
+        id: req.user._id,
+        email: req.user.email
+      },
+      companyId: req.user.companyId,
+      createdBy: {
+        id: req.user._id,
+        email: req.user.email
+      },
       metadata: {
         runwayResponse: runwayResponse,
         createdAt: new Date()
@@ -336,10 +362,13 @@ router.post('/generate', async (req, res) => {
 });
 
 // Get video status
-router.get('/:videoId/status', async (req, res) => {
+router.get('/:videoId/status', requireWeamAuth, async (req, res) => {
   try {
     const { videoId } = req.params;
-    const video = await Video.findOne({ videoId });
+    const video = await Video.findOne({ 
+      videoId,
+      'user.id': req.user._id // Ensure user can only access their own videos
+    });
 
     if (!video) {
       return res.status(404).json({ error: 'Video not found' });
@@ -362,12 +391,14 @@ router.get('/:videoId/status', async (req, res) => {
 });
 
 // Get all videos (history)
-router.get('/', async (req, res) => {
+router.get('/', requireWeamAuth, async (req, res) => {
   try {
     const { page = 1, limit = 10, status, search } = req.query;
     const skip = (page - 1) * limit;
 
-    let query = {};
+    let query = {
+      'user.id': req.user._id // Only get videos for the authenticated user
+    };
     
     if (status) {
       query.status = status;
@@ -405,7 +436,7 @@ router.get('/', async (req, res) => {
 });
 
 // Update video title
-router.patch('/:videoId/title', async (req, res) => {
+router.patch('/:videoId/title', requireWeamAuth, async (req, res) => {
   try {
     const { videoId } = req.params;
     const { title } = req.body;
@@ -433,7 +464,7 @@ router.patch('/:videoId/title', async (req, res) => {
 });
 
 // Update video prompt
-router.patch('/:videoId/prompt', async (req, res) => {
+router.patch('/:videoId/prompt', requireWeamAuth, async (req, res) => {
   try {
     const { videoId } = req.params;
     const { prompt } = req.body;
@@ -461,7 +492,7 @@ router.patch('/:videoId/prompt', async (req, res) => {
 });
 
 // Update video metadata (title, prompt, duration, aspectRatio, model)
-router.patch('/:videoId/edit', async (req, res) => {
+router.patch('/:videoId/edit', requireWeamAuth, async (req, res) => {
   try {
     const { videoId } = req.params;
     const { title, prompt, duration, aspectRatio, model } = req.body;
@@ -496,10 +527,10 @@ router.patch('/:videoId/edit', async (req, res) => {
 });
 
 // Process video editing (trim, segments, etc.)
-router.post('/:videoId/process-edits', async (req, res) => {
+router.post('/:videoId/process-edits', requireWeamAuth, async (req, res) => {
   try {
     const { videoId } = req.params;
-    const { trimStart, trimEnd, segments, outputFormat = 'mp4' } = req.body;
+    const { trimStart, trimEnd, segments, outputFormat = 'mp4', crop, music } = req.body;
 
     const video = await Video.findOne({ videoId });
     if (!video) {
@@ -511,19 +542,29 @@ router.post('/:videoId/process-edits', async (req, res) => {
       return res.status(400).json({ error: 'Invalid trim parameters' });
     }
 
-    // Store edit data for processing
-    const editData = {
-      trimStart,
-      trimEnd,
-      segments: segments || [],
-      outputFormat,
-      originalDuration: video.duration,
-      editedDuration: trimEnd - trimStart,
-      status: 'processing'
+    // Create and append edit record
+    const editRecord = {
+      editId: uuid(),
+      type: 'composite',
+      params: {
+        trimStart,
+        trimEnd,
+        segments: segments || [],
+        outputFormat,
+        crop: crop || null,
+        music: music || null,
+        originalDuration: video.duration,
+        editedDuration: trimEnd - trimStart,
+      },
+      status: 'processing',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    // Update video with edit data
-    video.videoEdits = editData;
+    if (!Array.isArray(video.videoEdits)) {
+      video.videoEdits = [];
+    }
+    video.videoEdits.push(editRecord);
     await video.save();
 
     // Here you would typically:
@@ -545,7 +586,7 @@ router.post('/:videoId/process-edits', async (req, res) => {
     res.json({
       success: true,
       message: 'Video editing request received',
-      editData,
+      edit: editRecord,
       estimatedTime: '2-5 minutes'
     });
 
@@ -555,8 +596,29 @@ router.post('/:videoId/process-edits', async (req, res) => {
   }
 });
 
+// Get edit history for a video
+router.get('/:videoId/edits', requireWeamAuth, async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    const video = await Video.findOne({
+      videoId,
+      'user.id': req.user._id
+    }).select('videoEdits videoId');
+
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+
+    const edits = Array.isArray(video.videoEdits) ? video.videoEdits : [];
+    res.json({ videoId: video.videoId, edits });
+  } catch (error) {
+    console.error('Error fetching edit history:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Regenerate video with same prompt
-router.post('/:videoId/regenerate', async (req, res) => {
+router.post('/:videoId/regenerate', requireWeamAuth, async (req, res) => {
   try {
     const { videoId } = req.params;
     const originalVideo = await Video.findOne({ videoId });
@@ -607,7 +669,7 @@ router.post('/:videoId/regenerate', async (req, res) => {
 });
 
 // Delete video
-router.delete('/:videoId', async (req, res) => {
+router.delete('/:videoId', requireWeamAuth, async (req, res) => {
   try {
     const { videoId } = req.params;
     const video = await Video.findOneAndDelete({ videoId });
