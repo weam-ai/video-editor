@@ -13,7 +13,7 @@ yarn-error.log*
 
 # Environment files
 .env
-*.config.env
+.config.env
 
 # OS files
 .DS_Store
