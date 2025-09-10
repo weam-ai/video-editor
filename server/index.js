@@ -3,11 +3,18 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-// Load environment variables
+// Load environment variables: prefer project root .env, fallback to AI-VideoGen/config.env
 const path = require('path');
-const configPath = path.join(__dirname, '../config.env');
-console.log('Loading config from:', configPath);
-dotenv.config({ path: configPath });
+const rootEnvPath = path.join(__dirname, '../../.env');
+const localConfigPath = path.join(__dirname, '../config.env');
+const loaded = dotenv.config({ path: rootEnvPath });
+if (loaded.error) {
+  console.log('Root .env not found, falling back to AI-VideoGen/config.env');
+  dotenv.config({ path: localConfigPath });
+  console.log('Loaded config from:', localConfigPath);
+} else {
+  console.log('Loaded config from root .env:', rootEnvPath);
+}
 
 // Debug environment variables
 console.log('Environment variables loaded:');
@@ -23,7 +30,7 @@ const videoRoutes = require('./routes/videoRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.BACKEND_PORT || process.env.PORT || 5000;
 
 // Middleware
 // Allow credentialed requests from the frontend so cookies are sent
@@ -42,7 +49,7 @@ dbConnect()
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => {
   console.error('MongoDB connection error:', err);
-  console.error('Please check your MONGODB_URI in config.env');
+  console.error('Please check your MONGODB_URI in your .env');
   process.exit(1);
 });
 

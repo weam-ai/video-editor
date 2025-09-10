@@ -57,12 +57,23 @@ A modern web application for creating AI-generated videos using Runway's Gen-4 m
 
 3. **Set up environment variables**
    
-   Create a `config.env` file in the root directory:
+   Use a single project root `.env` (preferred). The server will load root `.env`, and only fall back to `AI-VideoGen/config.env` if the root file isn’t present.
    ```env
-   RUNWAY_API_KEY=your_runway_api_key_here
-   MONGODB_URI=mongodb://localhost:27017/runway-video-creator
-   PORT=5000
+   # Root .env
+   # Frontend
+   PORT=3001
    NODE_ENV=development
+   NEXT_PUBLIC_API_BASE_PATH=/ai-video
+
+   # VideoGen backend
+   CLIENT_ORIGIN=http://localhost:3001
+   RUNWAY_API_KEY=your_runway_api_key_here
+   BANANA_API_KEY=
+   VEO3_API_KEY=
+   MONGODB_URI=mongodb://localhost:27017/ai-videogen
+   GEMINI_API_KEY=
+   # Backend port
+   # If you run the VideoGen API separately, set PORT=3004 before starting it
    ```
 
 4. **Start MongoDB**
@@ -88,8 +99,9 @@ A modern web application for creating AI-generated videos using Runway's Gen-4 m
 6. **Access the application**
    
    Open your browser and navigate to:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
+   - AI Docs: http://localhost:3000
+   - AI Video Studio (UI): http://localhost:3001/ai-video
+   - Video API: http://localhost:3004
 
 ## Usage
 
@@ -126,11 +138,15 @@ A modern web application for creating AI-generated videos using Runway's Gen-4 m
 
 ## Configuration
 
-### Runway API Setup
+### Providers & API Keys
 
-1. Sign up for a Runway account at https://runwayml.com
-2. Get your API key from the developer dashboard
-3. Add the API key to your `config.env` file
+Set provider keys in the root `.env`:
+
+- RUNWAY_API_KEY: Required for Runway Gen-4 Turbo (and Veo3 via Runway)
+- VEO3_API_KEY: Optional direct Veo3 provider (enables green dot)
+- BANANA_API_KEY: Optional Banana provider (enables green dot)
+
+The UI shows a green dot for providers with configured keys, red otherwise.
 
 ### MongoDB Setup
 
@@ -139,7 +155,7 @@ The application uses MongoDB to store video metadata. You can use:
 - MongoDB Atlas (cloud)
 - Any other MongoDB-compatible database
 
-Update the `MONGODB_URI` in your `config.env` file accordingly.
+Update `MONGODB_URI` in your `.env` accordingly.
 
 ## Project Structure
 
