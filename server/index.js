@@ -2,19 +2,30 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const fs = require('fs');
 
-// Load environment variables: prefer project root .env, fallback to AI-VideoGen/config.env
+// Load environment variables with flexible precedence:
+// 1) AI-VideoGen/.env (when working inside this package)
+// 2) project root .env
+// 3) AI-VideoGen/config.env (legacy fallback)
 const path = require('path');
+const localEnvPath = path.join(__dirname, '../.env');
 const rootEnvPath = path.join(__dirname, '../../.env');
-const localConfigPath = path.join(__dirname, '../config.env');
-const loaded = dotenv.config({ path: rootEnvPath });
-if (loaded.error) {
-  console.log('Root .env not found, falling back to AI-VideoGen/config.env');
-  dotenv.config({ path: localConfigPath });
-  console.log('Loaded config from:', localConfigPath);
-} else {
-  console.log('Loaded config from root .env:', rootEnvPath);
+const legacyConfigPath = path.join(__dirname, '../config.env');
+
+let loadedFrom = null;
+if (fs.existsSync(localEnvPath)) {
+  dotenv.config({ path: localEnvPath });
+  loadedFrom = localEnvPath;
+} else if (fs.existsSync(rootEnvPath)) {
+  dotenv.config({ path: rootEnvPath });
+  loadedFrom = rootEnvPath;
+} else if (fs.existsSync(legacyConfigPath)) {
+  dotenv.config({ path: legacyConfigPath });
+  loadedFrom = legacyConfigPath;
 }
+
+console.log('Loaded config from:', loadedFrom || 'no .env found');
 
 // Debug environment variables
 console.log('Environment variables loaded:');
