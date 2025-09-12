@@ -64,17 +64,19 @@ dbConnect()
   process.exit(1);
 });
 
-// Routes
-app.use('/api/videos', videoRoutes);
-app.use('/api/chat', chatRoutes);
+// Routes (mount under optional UI base path, e.g., /ai-video)
+const uiBasePath = process.env.NEXT_PUBLIC_API_BASE_PATH || process.env.REACT_APP_API_BASE_PATH || '';
+const apiPrefix = `${uiBasePath}/api`;
+app.use(`${apiPrefix}/videos`, videoRoutes);
+app.use(`${apiPrefix}/chat`, chatRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get(`${apiPrefix}/health`, (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
 // Test endpoint for debugging
-app.get('/api/test', (req, res) => {
+app.get(`${apiPrefix}/test`, (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Test endpoint working',
