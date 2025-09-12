@@ -64,17 +64,18 @@ dbConnect()
   process.exit(1);
 });
 
-// Routes
-app.use('/api/videos', videoRoutes);
-app.use('/api/chat', chatRoutes);
+// Routes (always mount under /ai-video/api)
+const apiPrefix = '/ai-video/api';
+app.use(`${apiPrefix}/videos`, videoRoutes);
+app.use(`${apiPrefix}/chat`, chatRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get(`${apiPrefix}/health`, (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
 // Test endpoint for debugging
-app.get('/api/test', (req, res) => {
+app.get(`${apiPrefix}/test`, (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Test endpoint working',
@@ -84,7 +85,7 @@ app.get('/api/test', (req, res) => {
 });
 
 // Auth/session check for clients to confirm Weam session
-app.get('/api/auth/me', (req, res) => {
+app.get(`${apiPrefix}/auth/me`, (req, res) => {
   if (req.session && req.session.user) {
     return res.json({ authenticated: true, user: req.session.user });
   }

@@ -67,7 +67,8 @@ export const VideoProvider = ({ children }) => {
     return 'generating';
   };
 
-  const basePath = process.env.NEXT_PUBLIC_API_BASE_PATH || process.env.REACT_APP_API_BASE_PATH || '';
+  const envBase = process.env.NEXT_PUBLIC_API_BASE_PATH || process.env.REACT_APP_API_BASE_PATH || '/ai-video';
+  const basePath = envBase.startsWith('/') ? envBase : `/${envBase}`;
   const api = axios.create({
     baseURL: `${basePath}/api/videos`,
     headers: {
