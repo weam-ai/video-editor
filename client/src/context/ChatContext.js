@@ -97,9 +97,9 @@ export const ChatProvider = ({ children }) => {
     (response) => response,
     (error) => {
       const status = error?.response?.status;
+      // If unauthenticated, do not redirect; let callers handle the error
       if (status === 401) {
-        window.location.href = 'https://app.weam.ai/login';
-        return;
+        return Promise.reject(error);
       }
       return Promise.reject(error);
     }

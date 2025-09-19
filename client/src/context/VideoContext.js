@@ -81,9 +81,9 @@ export const VideoProvider = ({ children }) => {
     (response) => response,
     (error) => {
       const status = error?.response?.status;
+      // If unauthenticated, do not redirect; let callers handle the error
       if (status === 401) {
-        window.location.href = 'https://app.weam.ai/login';
-        return; // stop further handling
+        return Promise.reject(error);
       }
       return Promise.reject(error);
     }

@@ -9,14 +9,6 @@ import { ChatProvider } from './context/ChatContext';
 
 function App() {
   const basePath = process.env.NEXT_PUBLIC_API_BASE_PATH || process.env.REACT_APP_API_BASE_PATH || '/ai-video';
-  // Redirect unauthenticated users immediately to Weam login (no UI flash)
-  if (typeof window !== 'undefined') {
-    const hasWeamCookie = document.cookie && document.cookie.includes((process.env.NEXT_PUBLIC_COOKIE_NAME || 'weam') + '=');
-    if (!hasWeamCookie) {
-      window.location.replace('https://app.weam.ai/login');
-      return null;
-    }
-  }
   if (typeof window !== 'undefined' && window.location.pathname === '/') {
     window.location.replace(basePath);
     return null;

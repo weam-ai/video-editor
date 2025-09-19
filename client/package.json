@@ -1,7 +1,6 @@
 {
   "name": "runway-video-creator-client",
   "version": "0.1.0",
-  "homepage": "/ai-video",
   "private": true,
   "dependencies": {
     "@tailwindcss/forms": "^0.5.10",
