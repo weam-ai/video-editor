@@ -15,13 +15,25 @@ export async function GET() {
 export async function POST(request: Request) {
   await connectToDatabase()
   const session = await getSession();
-  const userId = session?.user?._id;
-  const companyId = session?.user?.companyId;
+  const user = session?.user;
+  const companyId = user?.companyId;
+  const email = user?.email;
+  const userId = user?._id;
   const body = await request.json().catch(() => ({}))
   const title = (body?.title || 'New chat').toString().slice(0, 80)
   const threadId = crypto.randomUUID()
-  // Save companyId on chat for company-level isolation
-  const chat = await Chat.create({ threadId, title, messages: [], userId, companyId })
+  if (!userId || !email || !companyId) {
+    return new Response(JSON.stringify({ error: 'User not authenticated' }), { status: 401 })
+  }
+  // The new chat doc
+  const chat = await Chat.create({
+    id: threadId, // or leave undefined if you want Mongo to generate
+    title,
+    user: { id: userId, email },
+    companyId,
+    threadId,
+    messages: []
+  })
   return new Response(JSON.stringify({ threadId, chat: { threadId, title: chat.title, updatedAt: chat.updatedAt } }), { status: 201 })
 }
 

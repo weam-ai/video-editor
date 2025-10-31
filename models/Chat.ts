@@ -9,12 +9,16 @@ const MessageSchema = new Schema({
 })
 
 const ChatSchema = new Schema({
-  threadId: { type: String, required: true, unique: true },
+  id: { type: String }, // Optional, will mirror _id or can be left for app to fill
   title: { type: String, required: true },
+  user: {
+    id: { type: String, required: true },
+    email: { type: String, required: true },
+  },
+  companyId: { type: String, required: true },
+  threadId: { type: String, required: true, unique: true },
   messages: { type: [MessageSchema], default: [] },
-  userId: { type: String, required: true }, // enforce user-level isolation
-  companyId: { type: String, required: true }, // NEW: company-level isolation
-  updatedAt: { type: Date, default: Date.now },
+  // Any other fields...
 }, { timestamps: { createdAt: true, updatedAt: true } })
 
 export type MessageDoc = mongoose.InferSchemaType<typeof MessageSchema>

@@ -36,6 +36,13 @@ export default function Home() {
         const tid = newThread.data.threadId
         setThreadId(tid)
         setRefreshKey((k) => k + 1)
+        // Always store the initial system/assistant message in the DB
+        const initMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content: 'Hi! Describe a video you want to generate.' }
+        setMessages([initMsg])
+        await axios.post(`/aivideo/api/threads/${tid}`, {
+          role: 'assistant',
+          content: initMsg.content
+        })
         await axios.post(`/aivideo/api/threads/${tid}`, { role: 'user', content: text })
         const res = await axios.post('/aivideo/api/video/generate', {
           prompt: text,
@@ -68,7 +75,15 @@ export default function Home() {
         setMessages([]); // optional: clear old messages
       } else {
         const errText = e?.response?.data?.error || e.message
-        setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', content: `Error: ${errText}` }])
+        const errorMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content: `Error: ${errText}` }
+        setMessages((m) => [...m, errorMsg])
+        // Also save the error as a message in the current thread (if one exists)
+        if (threadId) {
+          await axios.post(`/aivideo/api/threads/${threadId as string}`, {
+            role: 'assistant',
+            content: `Error: ${errText}`,
+          })
+        }
       }
     } finally {
       setLoading(false)
@@ -121,7 +136,14 @@ export default function Home() {
         setThreadId(tid)
         const res = await axios.get(`/aivideo/api/threads/${tid}`)
         const threadMessages: ChatMessage[] = (res.data?.messages || []).map((m: any) => ({ id: m.id, role: m.role, content: m.content }))
-        setMessages(threadMessages.length ? threadMessages : [{ id: crypto.randomUUID(), role: 'assistant', content: 'Hi! Describe a video you want to generate.' }])
+        if (threadMessages.length > 0) {
+          setMessages(threadMessages)
+        } else {
+          // In edge case, store system message for empty DB thread
+          const initMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content: 'Hi! Describe a video you want to generate.' }
+          setMessages([initMsg])
+          await axios.post(`/aivideo/api/threads/${tid}`, { role: 'assistant', content: initMsg.content })
+        }
       }} />
       <div className="flex flex-col min-w-0">
         {header}
@@ -135,7 +157,7 @@ export default function Home() {
                 const params = new URLSearchParams()
                 if (threadId) params.set('threadId', threadId)
                 params.set('messageId', m.id)
-                params.set('videoUrl', m.videoUrl)
+                params.set('videoUrl', m.videoUrl || '') // ensure string
                 location.href = `/aivideo/editor?${params.toString()}`
               } : undefined}
             >{m.content}</MessageBubble>
