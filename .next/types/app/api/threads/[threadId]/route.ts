@@ -1,4 +1,4 @@
-// File: /Users/kshitijvarma/Desktop/sjdnskfjdvnbdjkbvn/AI-VideoGen/app/api/threads/[threadId]/route.ts
+// File: /Users/kshitijvarma/Desktop/video-editor/app/api/threads/[threadId]/route.ts
 import * as entry from '../../../../../../app/api/threads/[threadId]/route.js'
 import type { NextRequest } from 'next/server.js'
 

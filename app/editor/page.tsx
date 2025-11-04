@@ -64,7 +64,7 @@ export default function EditorPage() {
     <div className="h-screen flex flex-col bg-white">
       <header className="h-14 border-b px-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button className="text-xs px-3 h-8 rounded border" onClick={() => history.back()}>Back</button>
+          <button className="text-xs px-3 h-8 rounded border" onClick={() => (window.location.href = 'https://app.weam.ai')}>Back</button>
           <div className="text-sm text-neutral-600">Video Editor</div>
         </div>
         <div className="flex items-center gap-2 text-sm">

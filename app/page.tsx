@@ -103,7 +103,7 @@ export default function Home() {
       <div className="flex items-center gap-3">
         <button
           className="text-xs px-3 h-8 rounded border border-violet-200 hover:bg-violet-50"
-          onClick={() => history.back()}
+          onClick={() => (window.location.href = 'https://app.weam.ai')}
         >Back</button>
       </div>
       <div className="flex items-center gap-2 text-sm text-neutral-600">

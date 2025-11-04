@@ -1,4 +1,4 @@
-// File: /Users/kshitijvarma/Desktop/sjdnskfjdvnbdjkbvn/AI-VideoGen/app/api/video/generate/route.ts
+// File: /Users/kshitijvarma/Desktop/video-editor/app/api/video/generate/route.ts
 import * as entry from '../../../../../../app/api/video/generate/route.js'
 import type { NextRequest } from 'next/server.js'
 
