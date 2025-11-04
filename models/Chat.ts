@@ -24,6 +24,6 @@ const ChatSchema = new Schema({
 export type MessageDoc = mongoose.InferSchemaType<typeof MessageSchema>
 export type ChatDoc = mongoose.InferSchemaType<typeof ChatSchema>
 
-export default models.Chat || model('Chat', ChatSchema)
+export default models.Chat || model('Chat', ChatSchema, 'solution_aivideo_chat')
 
 
