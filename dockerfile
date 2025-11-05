@@ -1,5 +1,4 @@
-# Use your shared base image with Node 20 (ARM)
-FROM 533267363973.dkr.ecr.us-east-1.amazonaws.com/shared-node-v20:arm
+FROM node:20-alpine
 
 # Install pnpm globally
 RUN npm install -g pnpm
