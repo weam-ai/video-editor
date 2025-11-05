@@ -45,7 +45,7 @@ export default function EditorPage() {
     setSubmitting(true)
     try {
       const refinement = `Video edit refinement for message ${messageId}. ${applyEditsAsText()}`
-      const res = await axios.post('/aivideo/api/video/refine', {
+      const res = await axios.post('/ai-video/api/video/refine', {
         threadId,
         refinement,
         duration,
