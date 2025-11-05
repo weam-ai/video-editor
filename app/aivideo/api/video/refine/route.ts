@@ -1,6 +1,6 @@
 import axios from 'axios'
-import { connectToDatabase } from '../../../../lib/db'
-import Chat from '../../../../models/Chat'
+import { connectToDatabase } from '../../../../../lib/db'
+import Chat from '../../../../../models/Chat'
 
 export async function POST(request: Request) {
   try {
