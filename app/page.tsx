@@ -32,19 +32,19 @@ export default function Home() {
     try {
       // If no existing thread, create it and start a fresh generation
       if (!threadId) {
-        const newThread = await axios.post('/aivideo/api/threads', { title: text.slice(0, 80) })
+        const newThread = await axios.post('/ai-video/api/threads', { title: text.slice(0, 80) })
         const tid = newThread.data.threadId
         setThreadId(tid)
         setRefreshKey((k) => k + 1)
         // Always store the initial system/assistant message in the DB
         const initMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content: 'Hi! Describe a video you want to generate.' }
         setMessages([initMsg])
-        await axios.post(`/aivideo/api/threads/${tid}`, {
+        await axios.post(`/ai-video/api/threads/${tid}`, {
           role: 'assistant',
           content: initMsg.content
         })
-        await axios.post(`/aivideo/api/threads/${tid}`, { role: 'user', content: text })
-        const res = await axios.post('/aivideo/api/video/generate', {
+        await axios.post(`/ai-video/api/threads/${tid}`, { role: 'user', content: text })
+        const res = await axios.post('/ai-video/api/video/generate', {
           prompt: text,
           duration,
           aspectRatio: aspect,
@@ -52,12 +52,12 @@ export default function Home() {
         })
         const pretty = 'Job created.\n\n' + JSON.stringify(res.data, null, 2)
         setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', content: pretty }])
-        await axios.post(`/aivideo/api/threads/${tid}`, { role: 'assistant', content: pretty })
+        await axios.post(`/ai-video/api/threads/${tid}`, { role: 'assistant', content: pretty })
       } else {
         // Use iterative refinement on existing thread
         const tid = threadId
-        await axios.post(`/aivideo/api/threads/${tid}`, { role: 'user', content: text })
-        const res = await axios.post('/aivideo/api/video/refine', {
+        await axios.post(`/ai-video/api/threads/${tid}`, { role: 'user', content: text })
+        const res = await axios.post('/ai-video/api/video/refine', {
           threadId: tid,
           refinement: text,
           duration,
@@ -66,7 +66,7 @@ export default function Home() {
         })
         const pretty = 'Refined job created.\n\n' + JSON.stringify(res.data, null, 2)
         setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', content: pretty }])
-        await axios.post(`/aivideo/api/threads/${tid}`, { role: 'assistant', content: pretty })
+        await axios.post(`/ai-video/api/threads/${tid}`, { role: 'assistant', content: pretty })
       }
     } catch (e: any) {
       // CATCH 404: user not authenticated case
@@ -79,7 +79,7 @@ export default function Home() {
         setMessages((m) => [...m, errorMsg])
         // Also save the error as a message in the current thread (if one exists)
         if (threadId) {
-          await axios.post(`/aivideo/api/threads/${threadId as string}`, {
+          await axios.post(`/ai-video/api/threads/${threadId as string}`, {
             role: 'assistant',
             content: `Error: ${errText}`,
           })
@@ -134,7 +134,7 @@ export default function Home() {
         setRefreshKey((k) => k + 1)
       }} onSelectThread={async (tid) => {
         setThreadId(tid)
-        const res = await axios.get(`/aivideo/api/threads/${tid}`)
+        const res = await axios.get(`/ai-video/api/threads/${tid}`)
         const threadMessages: ChatMessage[] = (res.data?.messages || []).map((m: any) => ({ id: m.id, role: m.role, content: m.content }))
         if (threadMessages.length > 0) {
           setMessages(threadMessages)
@@ -142,7 +142,7 @@ export default function Home() {
           // In edge case, store system message for empty DB thread
           const initMsg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content: 'Hi! Describe a video you want to generate.' }
           setMessages([initMsg])
-          await axios.post(`/aivideo/api/threads/${tid}`, { role: 'assistant', content: initMsg.content })
+          await axios.post(`/ai-video/api/threads/${tid}`, { role: 'assistant', content: initMsg.content })
         }
       }} />
       <div className="flex flex-col min-w-0">
@@ -158,7 +158,7 @@ export default function Home() {
                 if (threadId) params.set('threadId', threadId)
                 params.set('messageId', m.id)
                 params.set('videoUrl', m.videoUrl || '') // ensure string
-                location.href = `/aivideo/editor?${params.toString()}`
+                location.href = `/ai-video/editor?${params.toString()}`
               } : undefined}
             >{m.content}</MessageBubble>
           ))}

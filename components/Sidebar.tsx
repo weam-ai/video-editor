@@ -19,7 +19,7 @@ export default function Sidebar({ onSelectThread, onNewChat, currentThreadId, re
 
   useEffect(() => {
     let mounted = true
-    axios.get('/aivideo/api/threads').then(res => { if (mounted) { setThreads(res.data.threads || []); setAllThreads(res.data.threads || []) } })
+    axios.get('/ai-video/api/threads').then(res => { if (mounted) { setThreads(res.data.threads || []); setAllThreads(res.data.threads || []) } })
       .catch(error => {
         // On 404, redirect to /404 (cookie/session missing case)
         if (error.response && error.response.status === 404) {
@@ -109,7 +109,7 @@ export default function Sidebar({ onSelectThread, onNewChat, currentThreadId, re
                 className="h-9 px-3 rounded-lg bg-red-600 text-white hover:bg-red-700"
                 onClick={async () => {
                   const tid = confirmingDelete.threadId
-                  await axios.delete(`/aivideo/api/threads/${tid}`)
+                  await axios.delete(`/ai-video/api/threads/${tid}`)
                   setThreads(prev => prev.filter(x => x.threadId !== tid))
                   setAllThreads(prev => prev.filter(x => x.threadId !== tid))
                   setConfirmingDelete(null)
