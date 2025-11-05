@@ -1,5 +1,5 @@
-import { connectToDatabase } from '../../../../lib/db'
-import Chat from '../../../../models/Chat'
+import { connectToDatabase } from '../../../../../lib/db'
+import Chat from '../../../../../models/Chat' // Changed from '../../../../models/Chat' to '../../../../../models/Chat'
 
 export async function GET(_: Request, { params }: { params: { threadId: string } }) {
   await connectToDatabase()
