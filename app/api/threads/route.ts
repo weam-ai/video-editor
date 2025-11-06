@@ -1,6 +1,6 @@
-import { connectToDatabase } from '../../../../lib/db'
-import Chat from '../../../../models/Chat'
-import { getSession } from '../../../../config/withSession'; 
+import { connectToDatabase } from '../../../lib/db'
+import Chat from '../../../models/Chat'
+import { getSession } from '../../../config/withSession'; 
 export async function GET() {
   await connectToDatabase()
   const session = await getSession();

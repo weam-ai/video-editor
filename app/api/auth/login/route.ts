@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '../../../../../config/withSession';
+import { getSession } from '../../../../config/withSession';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
